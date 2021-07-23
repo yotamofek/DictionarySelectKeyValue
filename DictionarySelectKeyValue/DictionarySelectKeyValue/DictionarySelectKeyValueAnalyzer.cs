@@ -33,13 +33,11 @@ namespace DictionarySelectKeyValue
               AnalyzeNode, SyntaxKind.InvocationExpression);
         }
 
-        private static bool IsEnumerableSelectMethod(ISymbol symbol)
-        {
-            return symbol is IMethodSymbol methodSymbol
+        private static bool IsEnumerableSelectMethod(ISymbol symbol) =>
+            symbol is IMethodSymbol methodSymbol
                 && methodSymbol.Name == "Select"
                 && methodSymbol.ContainingType.Name == "Enumerable"
                 && methodSymbol.ContainingType.ContainingNamespace?.ToDisplayString() == "System.Linq";
-        }
 
         private static SyntaxToken? GetLambdaArgIdentifier(LambdaExpressionSyntax lambdaExpression)
         {
@@ -99,17 +97,37 @@ namespace DictionarySelectKeyValue
             }
         }
 
+        private static bool IsDictionaryInterface(INamedTypeSymbol symbol) =>
+            (symbol.Name == "IDictionary" || symbol.Name == "IReadOnlyDictionary")
+            && symbol.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
+
         private static bool? SymbolImplementsIDictionary(ISymbol symbol)
         {
             var symbolType = GetSymbolType(symbol);
             if (symbolType is null) return null;
 
-            Func<INamedTypeSymbol, bool> isIDictionaryInterface = interface_ =>
-                    (interface_.Name == "IDictionary" || interface_.Name == "IReadOnlyDictionary")
-                        && interface_.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
+            return (symbolType is INamedTypeSymbol namedSymbol && IsDictionaryInterface(namedSymbol))
+                || symbolType.AllInterfaces.Any(IsDictionaryInterface);
+        }
 
-            return (symbolType is INamedTypeSymbol namedSymbol && isIDictionaryInterface(namedSymbol))
-                || symbolType.AllInterfaces.Any(isIDictionaryInterface);
+        private static ExpressionSyntax GetLambdaReturnExpr(LambdaExpressionSyntax lambda)
+        {
+            switch (lambda.Body)
+            {
+                case BlockSyntax block when block.Statements.Count == 1
+                    && block.Statements.First() is ReturnStatementSyntax returnStmt:
+                    {
+                        return returnStmt.Expression;
+                    }
+                case ExpressionSyntax expr:
+                    {
+                        return expr;
+                    }
+                default:
+                    {
+                        return null;
+                    }
+            }
         }
 
         private void AnalyzeNode(SyntaxNodeAnalysisContext context)
@@ -129,15 +147,15 @@ namespace DictionarySelectKeyValue
 
             // Look for calls to Enumerable.Select calls with a lambda as the first arg
             if (!(invocationExpr.ArgumentList.Arguments.First() is ArgumentSyntax selectArg
-                && selectArg.Expression is LambdaExpressionSyntax argExpression
-                && GetLambdaArgIdentifier(argExpression) is SyntaxToken kvIdentifier))
+                && selectArg.Expression is LambdaExpressionSyntax lambdaExpr
+                && GetLambdaArgIdentifier(lambdaExpr) is SyntaxToken lambdaArgIdentifier))
             {
                 return;
             }
 
             // Only diagnose on lambdas like "x => x.XXX"
-            if (!(argExpression.Body is MemberAccessExpressionSyntax kvPropAccessExpr
-                && kvPropAccessExpr.Expression.ToString() == kvIdentifier.ToString()))
+            if (!(GetLambdaReturnExpr(lambdaExpr) is MemberAccessExpressionSyntax kvPropAccessExpr
+                && kvPropAccessExpr.Expression.ToString() == lambdaArgIdentifier.ToString()))
             {
                 return;
             }
@@ -146,25 +164,22 @@ namespace DictionarySelectKeyValue
             var propertyName = kvPropAccessExpr.Name.Identifier.ToString();
 
             // The property on the Dictionary that we will suggest to use ("Keys" or "Values")
-            var dictionaryProp = new Dictionary<string, string> {
+            if (!(new Dictionary<string, string> {
                 { "Key", "Keys" },
                 { "Value", "Values" }
-            }[propertyName];
+            }[propertyName] is string dictionaryProp)) return;
 
-            if (dictionaryProp != null)
-            {
-                var diagnostic =
-                      Diagnostic.Create(
-                          Rule,
-                          invocationExpr.GetLocation(),
-                          properties: new Dictionary<string, string> {
+            var diagnostic =
+                  Diagnostic.Create(
+                      Rule,
+                      invocationExpr.GetLocation(),
+                      properties: new Dictionary<string, string> {
                               // Pass the name of the iter prop to the fix provider.
                               { DictionaryPropKey, dictionaryProp }
-                          }.ToImmutableDictionary(),
-                          messageArgs: propertyName);
+                      }.ToImmutableDictionary(),
+                      messageArgs: propertyName);
 
-                context.ReportDiagnostic(diagnostic);
-            }
+            context.ReportDiagnostic(diagnostic);
         }
     }
 }

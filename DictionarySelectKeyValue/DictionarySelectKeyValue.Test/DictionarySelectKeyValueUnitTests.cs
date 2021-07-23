@@ -63,7 +63,7 @@ namespace DictionarySelectKeyValue.Test
                 var a = new Dictionary<string, string>{ { ""key1"", ""value1"" } };
                 
                 _ = {|#0:a.Select(kv => kv.Key)|}.ToArray();
-                _ = {|#1:d.Select(kv => kv.Value)|}.ToArray();
+                _ = {|#1:d.Select(kv => { return kv.Value; })|}.ToArray();
                 _ = a.Select(kv => kv.Key + kv.Value).ToArray();
 
                 var b = new [] { new KV(""key1"", ""value1"") };
