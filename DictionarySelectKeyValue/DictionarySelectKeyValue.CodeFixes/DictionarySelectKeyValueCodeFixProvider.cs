@@ -36,35 +36,34 @@ namespace DictionarySelectKeyValue
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-            // TODO: Replace the following code with your own analysis, generating a CodeAction for each fix to suggest
             var diagnostic = context.Diagnostics.First();
-            var dictionaryProp = diagnostic.Properties["dictionaryProp"];
+            var dictionaryProp = diagnostic.Properties[DictionarySelectKeyValueAnalyzer.DictionaryPropKey];
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
-            // Find the type declaration identified by the diagnostic.
-            if (!(root.FindNode(diagnosticSpan) is InvocationExpressionSyntax declaration))
+            // Find the type invocation of `Enumerable.Select` identified by the diagnostic.
+            var diagnosticNode = root.FindNode(diagnosticSpan);
+            if (!(diagnosticNode is InvocationExpressionSyntax invocationExpr))
             {
-                declaration = root.FindNode(diagnosticSpan).ChildNodes().Select(node => node as InvocationExpressionSyntax).Where(node => !(node is null)).First();
+                invocationExpr = diagnosticNode
+                    .ChildNodes()
+                    .Select(node => node as InvocationExpressionSyntax)
+                    .Where(node => !(node is null))
+                    .First();
             }
 
             // Register a code action that will invoke the fix.
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: CodeFixTitle,
-                    createChangedDocument: c => UseDictionaryIterators(context.Document, declaration, dictionaryProp, c),
+                    createChangedDocument: c =>
+                        UseDictionaryIterators(context.Document, invocationExpr, dictionaryProp, c),
                     equivalenceKey: CodeFixTitle),
                 diagnostic);
         }
 
         private async Task<Document> UseDictionaryIterators(Document document, InvocationExpressionSyntax invocationExpr, string dictionaryProp, CancellationToken cancellationToken)
         {
-            if (invocationExpr is null)
-            {
-                throw new ArgumentNullException(nameof(invocationExpr));
-            }
-
             var receiverExpression = (invocationExpr.Expression as MemberAccessExpressionSyntax).Expression;
-            if (receiverExpression is null) throw new InvalidCastException("Could not get receiver expression.");
 
             var newPropAccess = SyntaxFactory.MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,

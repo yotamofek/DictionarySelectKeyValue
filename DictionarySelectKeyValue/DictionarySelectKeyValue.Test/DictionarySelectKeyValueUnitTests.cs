@@ -46,6 +46,7 @@ namespace DictionarySelectKeyValue.Test
         class DictionaryContext
         {
             public ConcurrentDictionary<string, string> Dictionary { get; } = new ConcurrentDictionary<string, string>();
+            public IDictionary<string, string> GetDictionary() => Dictionary;
         }
 
         class DictionaryContextContext
@@ -57,20 +58,19 @@ namespace DictionarySelectKeyValue.Test
         class TestClass
         {
 
-            private async Task TestMethod()
+            private void TestMethod<TKey, TValue>(IDictionary<TKey, TValue> d)
             {
                 var a = new Dictionary<string, string>{ { ""key1"", ""value1"" } };
                 
                 _ = {|#0:a.Select(kv => kv.Key)|}.ToArray();
-                _ = {|#1:a.Select(kv => kv.Value)|}.ToArray();
+                _ = {|#1:d.Select(kv => kv.Value)|}.ToArray();
                 _ = a.Select(kv => kv.Key + kv.Value).ToArray();
 
                 var b = new [] { new KV(""key1"", ""value1"") };
                 _ = b.Select(kv => kv.Key).ToArray();
 
                 var c = new DictionaryContextContext {};
-                await Task.Delay(0).ConfigureAwait(false);
-                System.Console.WriteLine({|#2:c.DictionaryContext.Dictionary.Select(a => a.Key)|}.ToArray());
+                System.Console.WriteLine({|#2:c.DictionaryContext.GetDictionary().Select(a => a.Key)|}.ToArray());
             }
         }
     }";
@@ -99,6 +99,7 @@ namespace DictionarySelectKeyValue.Test
         class DictionaryContext
         {
             public ConcurrentDictionary<string, string> Dictionary { get; } = new ConcurrentDictionary<string, string>();
+            public IDictionary<string, string> GetDictionary() => Dictionary;
         }
 
         class DictionaryContextContext
@@ -110,20 +111,19 @@ namespace DictionarySelectKeyValue.Test
         class TestClass
         {
 
-            private async Task TestMethod()
+            private void TestMethod<TKey, TValue>(IDictionary<TKey, TValue> d)
             {
                 var a = new Dictionary<string, string>{ { ""key1"", ""value1"" } };
                 
                 _ = a.Keys.ToArray();
-                _ = a.Values.ToArray();
+                _ = d.Values.ToArray();
                 _ = a.Select(kv => kv.Key + kv.Value).ToArray();
 
                 var b = new [] { new KV(""key1"", ""value1"") };
                 _ = b.Select(kv => kv.Key).ToArray();
 
                 var c = new DictionaryContextContext {};
-                await Task.Delay(0).ConfigureAwait(false);
-                System.Console.WriteLine(c.DictionaryContext.Dictionary.Keys.ToArray());
+                System.Console.WriteLine(c.DictionaryContext.GetDictionary().Keys.ToArray());
             }
         }
     }";

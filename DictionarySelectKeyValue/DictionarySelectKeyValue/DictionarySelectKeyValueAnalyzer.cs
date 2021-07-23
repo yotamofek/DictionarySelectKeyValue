@@ -14,6 +14,7 @@ namespace DictionarySelectKeyValue
     public class DictionarySelectKeyValueAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "DictionarySelectKeyValue";
+        public const string DictionaryPropKey = nameof(DictionaryPropKey);
 
         private static readonly LocalizableString Title = "Use built-in Dictionary dimension iteration methods.";
         private static readonly LocalizableString MessageFormat = "Prefer using Dictionary.{0}s instead.";
@@ -32,12 +33,12 @@ namespace DictionarySelectKeyValue
               AnalyzeNode, SyntaxKind.InvocationExpression);
         }
 
-        private static bool IsEnumerableSelectMethod(IMethodSymbol methodSymbol)
+        private static bool IsEnumerableSelectMethod(ISymbol symbol)
         {
-            var methodContainingType = methodSymbol.ContainingType;
-
-            return methodContainingType.Name == "Enumerable"
-                && methodContainingType.ContainingNamespace?.ToDisplayString() == "System.Linq";
+            return symbol is IMethodSymbol methodSymbol
+                && methodSymbol.Name == "Select"
+                && methodSymbol.ContainingType.Name == "Enumerable"
+                && methodSymbol.ContainingType.ContainingNamespace?.ToDisplayString() == "System.Linq";
         }
 
         private static SyntaxToken? GetLambdaArgIdentifier(LambdaExpressionSyntax lambdaExpression)
@@ -79,66 +80,72 @@ namespace DictionarySelectKeyValue
                     {
                         return property.Type;
                     }
+                case IParameterSymbol parameter:
+                    {
+                        return parameter.Type;
+                    }
+                case IMethodSymbol method:
+                    {
+                        return method.ReturnType;
+                    }
+                case IFieldSymbol field:
+                    {
+                        return field.Type;
+                    }
                 default:
                     {
-                        throw new InvalidCastException();
+                        return null;
                     }
             }
         }
 
-        private static bool SymbolImplementsIDictionary(ISymbol symbol)
+        private static bool? SymbolImplementsIDictionary(ISymbol symbol)
         {
             var symbolType = GetSymbolType(symbol);
+            if (symbolType is null) return null;
 
-            return symbolType.AllInterfaces.Any(
-                interface_ =>
-                    interface_.Name == "IDictionary"
-                        && interface_.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic");
+            Func<INamedTypeSymbol, bool> isIDictionaryInterface = interface_ =>
+                    (interface_.Name == "IDictionary" || interface_.Name == "IReadOnlyDictionary")
+                        && interface_.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic";
+
+            return (symbolType is INamedTypeSymbol namedSymbol && isIDictionaryInterface(namedSymbol))
+                || symbolType.AllInterfaces.Any(isIDictionaryInterface);
         }
 
         private void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
 
-            var memberAccessExpr =
-              invocationExpr.Expression as MemberAccessExpressionSyntax;
+            // Find all calls to to the Enumerable.Select extension method
+            if (!(invocationExpr.Expression is MemberAccessExpressionSyntax selectMethodAccessExpr
+                && context.SemanticModel.GetSymbolInfo(selectMethodAccessExpr).Symbol is IMethodSymbol memberSymbol
+                && IsEnumerableSelectMethod(memberSymbol))) return;
 
-            if (memberAccessExpr?.Name.ToString() != "Select") return;
+            // Get the symbol for the receiver, i.e. the dictionary being iterated
+            var receiverSymbol = context.SemanticModel.GetSymbolInfo(selectMethodAccessExpr.Expression).Symbol;
 
-            if (!(context.SemanticModel.
-              GetSymbolInfo(memberAccessExpr).Symbol is IMethodSymbol memberSymbol)) return;
+            // Make sure the receiver implements the `IDictionary` interface
+            if (!(SymbolImplementsIDictionary(receiverSymbol) is true)) return;
 
-            // TODO: support more than `ILocalSymbol`
-            var receiverSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpr.Expression).Symbol;
-
-            // make sure the receiver implement the `IDictionary` interface
-            if (!SymbolImplementsIDictionary(receiverSymbol)) return;
-
-            if (!IsEnumerableSelectMethod(memberSymbol)) return;
-
-            var selectArg = invocationExpr.ArgumentList.Arguments.First();
-            if (selectArg is null) return;
-
-            if (!(selectArg.Expression is LambdaExpressionSyntax argExpression)) return;
-            if (!(GetLambdaArgIdentifier(argExpression) is SyntaxToken kvIdentifier)) return;
-
-            string propertyName;
-
-            switch (argExpression.Body)
+            // Look for calls to Enumerable.Select calls with a lambda as the first arg
+            if (!(invocationExpr.ArgumentList.Arguments.First() is ArgumentSyntax selectArg
+                && selectArg.Expression is LambdaExpressionSyntax argExpression
+                && GetLambdaArgIdentifier(argExpression) is SyntaxToken kvIdentifier))
             {
-                case MemberAccessExpressionSyntax expression:
-                    {
-                        if (expression.Expression.ToString() != kvIdentifier.ToString()) return;
-                        propertyName = expression.Name.Identifier.ToString();
-
-                        break;
-                    }
-                default:
-                    {
-                        return;
-                    }
+                return;
             }
 
+            // Only diagnose on lambdas like "x => x.XXX"
+            if (!(argExpression.Body is MemberAccessExpressionSyntax kvPropAccessExpr
+                && kvPropAccessExpr.Expression.ToString() == kvIdentifier.ToString()))
+            {
+                return;
+            }
+
+            // The property on the KeyValue structure being accessed ("Key" or "Value")
+            var propertyName = kvPropAccessExpr.Name.Identifier.ToString();
+
+            // The property on the Dictionary that we will suggest to use ("Keys" or "Values")
             var dictionaryProp = new Dictionary<string, string> {
                 { "Key", "Keys" },
                 { "Value", "Values" }
@@ -151,7 +158,8 @@ namespace DictionarySelectKeyValue
                           Rule,
                           invocationExpr.GetLocation(),
                           properties: new Dictionary<string, string> {
-                              { "dictionaryProp", dictionaryProp }
+                              // Pass the name of the iter prop to the fix provider.
+                              { DictionaryPropKey, dictionaryProp }
                           }.ToImmutableDictionary(),
                           messageArgs: propertyName);
 
