@@ -16,7 +16,7 @@ namespace DictionarySelectKeyValue
         public const string DiagnosticId = "DictionarySelectKeyValue";
 
         private static readonly LocalizableString Title = "Use built-in Dictionary dimension iteration methods.";
-        private static readonly LocalizableString MessageFormat = "Use Dictionary.{0} instead.";
+        private static readonly LocalizableString MessageFormat = "Prefer using Dictionary.{0}s instead.";
         private static readonly LocalizableString Description = "Dictionary dimension iteration is manually implemented.";
         private const string Category = "Consistency";
 
@@ -75,6 +75,10 @@ namespace DictionarySelectKeyValue
                     {
                         return local.Type;
                     }
+                case IPropertySymbol property:
+                    {
+                        return property.Type;
+                    }
                 default:
                     {
                         throw new InvalidCastException();
@@ -101,8 +105,8 @@ namespace DictionarySelectKeyValue
 
             if (memberAccessExpr?.Name.ToString() != "Select") return;
 
-            var memberSymbol = context.SemanticModel.
-              GetSymbolInfo(memberAccessExpr).Symbol as IMethodSymbol;
+            if (!(context.SemanticModel.
+              GetSymbolInfo(memberAccessExpr).Symbol is IMethodSymbol memberSymbol)) return;
 
             // TODO: support more than `ILocalSymbol`
             var receiverSymbol = context.SemanticModel.GetSymbolInfo(memberAccessExpr.Expression).Symbol;

@@ -25,6 +25,7 @@ namespace DictionarySelectKeyValue.Test
             var test = @"
     using System;
     using System.Collections.Generic;
+    using System.Collections.Concurrent;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -41,11 +42,22 @@ namespace DictionarySelectKeyValue.Test
                 Value = value;
             }
         }
+
+        class DictionaryContext
+        {
+            public ConcurrentDictionary<string, string> Dictionary { get; } = new ConcurrentDictionary<string, string>();
+        }
+
+        class DictionaryContextContext
+        {
+            private DictionaryContext _dictionaryContext = new DictionaryContext {};
+            public DictionaryContext DictionaryContext => _dictionaryContext;
+        }
         
         class TestClass
         {
 
-            private void TestMethod()
+            private async Task TestMethod()
             {
                 var a = new Dictionary<string, string>{ { ""key1"", ""value1"" } };
                 
@@ -55,6 +67,10 @@ namespace DictionarySelectKeyValue.Test
 
                 var b = new [] { new KV(""key1"", ""value1"") };
                 _ = b.Select(kv => kv.Key).ToArray();
+
+                var c = new DictionaryContextContext {};
+                await Task.Delay(0).ConfigureAwait(false);
+                System.Console.WriteLine({|#2:c.DictionaryContext.Dictionary.Select(a => a.Key)|}.ToArray());
             }
         }
     }";
@@ -62,6 +78,7 @@ namespace DictionarySelectKeyValue.Test
             var fixedTest = @"
     using System;
     using System.Collections.Generic;
+    using System.Collections.Concurrent;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
@@ -78,11 +95,22 @@ namespace DictionarySelectKeyValue.Test
                 Value = value;
             }
         }
+
+        class DictionaryContext
+        {
+            public ConcurrentDictionary<string, string> Dictionary { get; } = new ConcurrentDictionary<string, string>();
+        }
+
+        class DictionaryContextContext
+        {
+            private DictionaryContext _dictionaryContext = new DictionaryContext {};
+            public DictionaryContext DictionaryContext => _dictionaryContext;
+        }
         
         class TestClass
         {
 
-            private void TestMethod()
+            private async Task TestMethod()
             {
                 var a = new Dictionary<string, string>{ { ""key1"", ""value1"" } };
                 
@@ -92,6 +120,10 @@ namespace DictionarySelectKeyValue.Test
 
                 var b = new [] { new KV(""key1"", ""value1"") };
                 _ = b.Select(kv => kv.Key).ToArray();
+
+                var c = new DictionaryContextContext {};
+                await Task.Delay(0).ConfigureAwait(false);
+                System.Console.WriteLine(c.DictionaryContext.Dictionary.Keys.ToArray());
             }
         }
     }";
@@ -100,7 +132,8 @@ namespace DictionarySelectKeyValue.Test
                 test,
                 new[] {
                     VerifyCS.Diagnostic("DictionarySelectKeyValue").WithLocation(0).WithArguments("Key"),
-                    VerifyCS.Diagnostic("DictionarySelectKeyValue").WithLocation(1).WithArguments("Value")
+                    VerifyCS.Diagnostic("DictionarySelectKeyValue").WithLocation(1).WithArguments("Value"),
+                    VerifyCS.Diagnostic("DictionarySelectKeyValue").WithLocation(2).WithArguments("Key")
                 },
                 fixedTest);
         }

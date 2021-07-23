@@ -42,7 +42,10 @@ namespace DictionarySelectKeyValue
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             // Find the type declaration identified by the diagnostic.
-            var declaration = root.FindNode(diagnosticSpan) as InvocationExpressionSyntax;
+            if (!(root.FindNode(diagnosticSpan) is InvocationExpressionSyntax declaration))
+            {
+                declaration = root.FindNode(diagnosticSpan).ChildNodes().Select(node => node as InvocationExpressionSyntax).Where(node => !(node is null)).First();
+            }
 
             // Register a code action that will invoke the fix.
             context.RegisterCodeFix(
@@ -55,9 +58,17 @@ namespace DictionarySelectKeyValue
 
         private async Task<Document> UseDictionaryIterators(Document document, InvocationExpressionSyntax invocationExpr, string dictionaryProp, CancellationToken cancellationToken)
         {
+            if (invocationExpr is null)
+            {
+                throw new ArgumentNullException(nameof(invocationExpr));
+            }
+
+            var receiverExpression = (invocationExpr.Expression as MemberAccessExpressionSyntax).Expression;
+            if (receiverExpression is null) throw new InvalidCastException("Could not get receiver expression.");
+
             var newPropAccess = SyntaxFactory.MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
-                (invocationExpr.Expression as MemberAccessExpressionSyntax).Expression,
+                receiverExpression,
                 SyntaxFactory.IdentifierName(dictionaryProp));
 
             SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
