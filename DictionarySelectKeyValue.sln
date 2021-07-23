@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31507.150
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DictionarySelectKeyValue", "DictionarySelectKeyValue\DictionarySelectKeyValue\DictionarySelectKeyValue.csproj", "{D1468185-CF57-45BC-B9FF-7A351E368652}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DictionarySelectKeyValue.CodeFixes", "DictionarySelectKeyValue\DictionarySelectKeyValue.CodeFixes\DictionarySelectKeyValue.CodeFixes.csproj", "{F908D4F5-A606-447C-913E-55ADAC9E97C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DictionarySelectKeyValue.Package", "DictionarySelectKeyValue\DictionarySelectKeyValue.Package\DictionarySelectKeyValue.Package.csproj", "{4D8E8D8B-45D9-4F82-B7FD-1572421179ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DictionarySelectKeyValue.Test", "DictionarySelectKeyValue\DictionarySelectKeyValue.Test\DictionarySelectKeyValue.Test.csproj", "{202FCC5D-2D4D-4BAA-B26C-117CE158B1B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DictionarySelectKeyValue.Vsix", "DictionarySelectKeyValue\DictionarySelectKeyValue.Vsix\DictionarySelectKeyValue.Vsix.csproj", "{1E3B2C05-A110-4E26-B7BE-D968DCA20D37}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1468185-CF57-45BC-B9FF-7A351E368652}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1468185-CF57-45BC-B9FF-7A351E368652}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1468185-CF57-45BC-B9FF-7A351E368652}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1468185-CF57-45BC-B9FF-7A351E368652}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F908D4F5-A606-447C-913E-55ADAC9E97C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F908D4F5-A606-447C-913E-55ADAC9E97C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F908D4F5-A606-447C-913E-55ADAC9E97C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F908D4F5-A606-447C-913E-55ADAC9E97C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D8E8D8B-45D9-4F82-B7FD-1572421179ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D8E8D8B-45D9-4F82-B7FD-1572421179ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D8E8D8B-45D9-4F82-B7FD-1572421179ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D8E8D8B-45D9-4F82-B7FD-1572421179ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{202FCC5D-2D4D-4BAA-B26C-117CE158B1B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{202FCC5D-2D4D-4BAA-B26C-117CE158B1B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{202FCC5D-2D4D-4BAA-B26C-117CE158B1B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{202FCC5D-2D4D-4BAA-B26C-117CE158B1B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E3B2C05-A110-4E26-B7BE-D968DCA20D37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E3B2C05-A110-4E26-B7BE-D968DCA20D37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E3B2C05-A110-4E26-B7BE-D968DCA20D37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E3B2C05-A110-4E26-B7BE-D968DCA20D37}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {33D09D6D-BE20-432B-9A6F-85130F4B24C2}
+	EndGlobalSection
+EndGlobal
